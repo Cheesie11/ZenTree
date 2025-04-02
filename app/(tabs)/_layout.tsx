@@ -5,27 +5,29 @@ import { Platform } from "react-native";
 import { HapticTab } from "@/components/HapticTab";
 import { IconSymbol } from "@/components/ui/IconSymbol";
 import TabBarBackground from "@/components/ui/TabBarBackground";
-import { Colors } from "@/constants/Colors";
-import { useColorScheme } from "@/hooks/useColorScheme";
 import { Ionicons } from "@expo/vector-icons";
 
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
-
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? "light"].tint,
+        tabBarActiveTintColor: "#dddfc0",
+        tabBarInactiveTintColor: "#9b9c86",
         headerShown: false,
         tabBarButton: HapticTab,
         tabBarBackground: TabBarBackground,
         tabBarStyle: Platform.select({
           ios: {
-            // Use a transparent background on iOS to show the blur effect
             position: "absolute",
+            backgroundColor: "#73906e",
+            height: 90,
+            paddingTop: 15,
           },
           default: {},
         }),
+        tabBarLabelStyle: {
+          fontSize: 11,
+        },
       }}
     >
       <Tabs.Screen
@@ -33,7 +35,7 @@ export default function TabLayout() {
         options={{
           title: "Home",
           tabBarIcon: ({ color }) => (
-            <IconSymbol size={28} name="house.fill" color={color} />
+            <IconSymbol size={32} name="house.fill" color={color} />
           ),
         }}
       />
@@ -42,7 +44,7 @@ export default function TabLayout() {
         options={{
           title: "Info",
           tabBarIcon: ({ color }) => (
-            <Ionicons size={28} name="information-circle" color={color} />
+            <Ionicons size={32} name="information-circle" color={color} />
           ),
         }}
       />
