@@ -1,5 +1,4 @@
 import { Image, StyleSheet } from "react-native";
-
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 
@@ -30,17 +29,19 @@ const styles = StyleSheet.create({
     backgroundColor: "white",
   },
   title: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: "bold",
-    marginBottom: 10,
+    marginBottom: 5,
     textAlign: "center",
-    color: "black",
+    fontFamily: "IndieFlower",
+    color: '#73906e',
   },
   subtitle: {
     fontSize: 16,
     textAlign: "center",
     marginBottom: 20,
     color: "black",
+    fontFamily: "IndieFlower",
   },
   welcomeImage: {
     width: 400,
