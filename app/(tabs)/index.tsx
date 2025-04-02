@@ -4,14 +4,14 @@ import {
   SafeAreaView,
   StyleSheet,
   View,
-  Button,
   ScrollView,
   TouchableOpacity,
   Modal,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
+import { Button } from "react-native-paper";
 import { ThemedText } from "@/components/ThemedText";
-import { ThemedView } from "@/components/ThemedView";
+import { MaterialIcons } from "@expo/vector-icons";
 
 export default function HomeScreen() {
   const [images, setImages] = useState<string[]>([]);
@@ -48,9 +48,11 @@ export default function HomeScreen() {
       />
       <View style={styles.libraryContainer}>
         <ThemedText style={styles.librarySubtitle}>Your Library:</ThemedText>
+      <Button mode="contained" onPress={openCamera} style={styles.cameraButton}>
+        <MaterialIcons name="add" size={24} color="white" />
+      </Button>
       </View>
 
-      <Button title="Open Camera" onPress={openCamera} />
 
       <ScrollView>
         {images.map((img, index) => (
@@ -108,15 +110,20 @@ const styles = StyleSheet.create({
   },
   libraryContainer: {
     width: "100%",
-    alignItems: "flex-start",
     paddingHorizontal: 25,
     marginTop: 20,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 25,
   },
   librarySubtitle: {
     fontSize: 22,
     fontWeight: "600",
     color: "#333",
     fontFamily: "IndieFlower",
+  },
+  cameraButton: {
+    backgroundColor: "#73906e",
   },
   modalContainer: {
     flex: 1,
