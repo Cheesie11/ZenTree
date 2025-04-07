@@ -20,13 +20,13 @@ export default function TabLayout() {
           ios: {
             position: "absolute",
             backgroundColor: "#73906e",
-            height: 90,
-            paddingTop: 15,
+            height: 65,
+            paddingTop: 8,
           },
           default: {},
         }),
         tabBarLabelStyle: {
-          fontSize: 11,
+          fontSize: 10,
         },
       }}
     >
@@ -35,7 +35,7 @@ export default function TabLayout() {
         options={{
           title: "Home",
           tabBarIcon: ({ color }) => (
-            <IconSymbol size={32} name="house.fill" color={color} />
+            <IconSymbol size={26} name="house.fill" color={color} />
           ),
         }}
       />
@@ -44,7 +44,7 @@ export default function TabLayout() {
         options={{
           title: "Info",
           tabBarIcon: ({ color }) => (
-            <Ionicons size={32} name="information-circle" color={color} />
+            <Ionicons size={26} name="information-circle" color={color} />
           ),
         }}
       />
