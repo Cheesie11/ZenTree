@@ -50,6 +50,10 @@ export default function HomeScreen() {
     }
   };
 
+  const deleteBonsai = (index: number) => {
+    setImages((prevImages) => prevImages.filter((_, i) => i !== index));
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <ThemedText type="title" style={styles.title}>
@@ -78,6 +82,9 @@ export default function HomeScreen() {
           <View key={index} style={styles.bonsaiCard}>
             <View style={styles.textContainer}>
               <ThemedText style={styles.bonsaiName}>{img.name}</ThemedText>
+              <TouchableOpacity onPress={() => deleteBonsai(index)}>
+                <MaterialIcons name="delete" size={32} color="#d74f5a" />
+              </TouchableOpacity>
             </View>
             <Image source={{ uri: img.uri }} style={styles.bonsaiImage} />
           </View>
@@ -224,15 +231,15 @@ const styles = StyleSheet.create({
   },
   textContainer: {
     width: "50%",
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 10,
+    alignItems: "flex-start",
+    padding: 20,
   },
   bonsaiName: {
-    fontSize: 18,
+    fontSize: 20,
     fontFamily: "IndieFlower",
+    lineHeight: 30,
     color: "#555",
-    textAlign: "center",
+    textAlign: "left",
   },
   bonsaiImage: {
     width: "50%",
