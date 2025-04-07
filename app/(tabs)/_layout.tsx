@@ -19,7 +19,7 @@ export default function TabLayout() {
         tabBarStyle: Platform.select({
           ios: {
             position: "absolute",
-            backgroundColor: "#73906e",
+            backgroundColor: "#eee7ca",
             height: 65,
             paddingTop: 8,
           },

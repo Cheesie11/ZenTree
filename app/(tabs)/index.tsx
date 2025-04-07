@@ -359,6 +359,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 25,
+    paddingBottom: 20,
   },
   librarySubtitle: {
     fontSize: 22,
