@@ -17,7 +17,7 @@ import { ThemedText } from "@/components/ThemedText";
 import { MaterialIcons } from "@expo/vector-icons";
 
 export default function HomeScreen() {
-  const [images, setImages] = useState<string[]>([]);
+  const [images, setImages] = useState<{ uri: string; name: string }[]>([]);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [imageName, setImageName] = useState<string>("");
 
@@ -40,8 +40,11 @@ export default function HomeScreen() {
   };
 
   const saveImage = () => {
-    if (selectedImage) {
-      setImages((prevImages) => [...prevImages, selectedImage]);
+    if (selectedImage && imageName.trim()) {
+      setImages((prevImages) => [
+        ...prevImages,
+        { uri: selectedImage, name: imageName.trim() },
+      ]);
       setSelectedImage(null);
       setImageName("");
     }
@@ -70,14 +73,14 @@ export default function HomeScreen() {
         </Button>
       </View>
 
-      <ScrollView>
+      <ScrollView contentContainerStyle={{ padding: 10 }}>
         {images.map((img, index) => (
-          <TouchableOpacity key={index} onPress={() => setSelectedImage(img)}>
-            <Image
-              source={{ uri: img }}
-              style={{ width: 100, height: 100, borderRadius: 8, margin: 5 }}
-            />
-          </TouchableOpacity>
+          <View key={index} style={styles.bonsaiCard}>
+            <View style={styles.textContainer}>
+              <ThemedText style={styles.bonsaiName}>{img.name}</ThemedText>
+            </View>
+            <Image source={{ uri: img.uri }} style={styles.bonsaiImage} />
+          </View>
         ))}
       </ScrollView>
 
@@ -208,5 +211,32 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
     width: "100%",
     gap: 10,
+  },
+  bonsaiCard: {
+    flexDirection: "row",
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 10,
+    overflow: "hidden",
+    marginBottom: 10,
+    height: 120,
+    backgroundColor: "#f9f9f9",
+  },
+  textContainer: {
+    width: "50%",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 10,
+  },
+  bonsaiName: {
+    fontSize: 18,
+    fontFamily: "IndieFlower",
+    color: "#555",
+    textAlign: "center",
+  },
+  bonsaiImage: {
+    width: "50%",
+    height: "100%",
+    resizeMode: "cover",
   },
 });
