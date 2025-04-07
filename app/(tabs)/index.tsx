@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Image,
   SafeAreaView,
@@ -15,11 +15,35 @@ import * as ImagePicker from "expo-image-picker";
 import { Button } from "react-native-paper";
 import { ThemedText } from "@/components/ThemedText";
 import { MaterialIcons } from "@expo/vector-icons";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function HomeScreen() {
   const [images, setImages] = useState<{ uri: string; name: string }[]>([]);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [imageName, setImageName] = useState<string>("");
+
+  useEffect(() => {
+    const loadImages = async () => {
+      try {
+        const savedImages = await AsyncStorage.getItem("images");
+        if (savedImages) {
+          setImages(JSON.parse(savedImages));
+        }
+      } catch (error) {
+        console.error("Failed to load images from AsyncStorage", error);
+      }
+    };
+
+    loadImages();
+  }, []);
+
+  const saveImagesToStorage = async (newImages: { uri: string; name: string }[]) => {
+    try {
+      await AsyncStorage.setItem("images", JSON.stringify(newImages))
+    } catch (error) {
+      console.error("Failed to save images to AsyncStorage", error);
+    }
+  };
 
   const openCamera = async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
@@ -41,17 +65,19 @@ export default function HomeScreen() {
 
   const saveImage = () => {
     if (selectedImage && imageName.trim()) {
-      setImages((prevImages) => [
-        ...prevImages,
-        { uri: selectedImage, name: imageName.trim() },
-      ]);
+      const newImage = { uri: selectedImage, name: imageName.trim() };
+      const updatedImages = [...images, newImage];
+      setImages(updatedImages);
+      saveImagesToStorage(updatedImages);
       setSelectedImage(null);
       setImageName("");
     }
   };
 
   const deleteBonsai = (index: number) => {
-    setImages((prevImages) => prevImages.filter((_, i) => i !== index));
+    const updatedImages = images.filter((_, i) => i !== index);
+    setImages(updatedImages);
+    saveImagesToStorage(updatedImages);
   };
 
   return (
