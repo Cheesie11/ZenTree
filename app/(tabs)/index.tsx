@@ -10,17 +10,27 @@ import {
   TextInput,
   TouchableWithoutFeedback,
   Keyboard,
+  Dimensions,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { Button } from "react-native-paper";
 import { ThemedText } from "@/components/ThemedText";
 import { MaterialIcons } from "@expo/vector-icons";
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import AsyncStorage from "@react-native-async-storage/async-storage";
+const { width } = Dimensions.get("window");
 
 export default function HomeScreen() {
-  const [images, setImages] = useState<{ uri: string; name: string }[]>([]);
+  const [images, setImages] = useState<
+    { uri: string; name: string; notes?: string; watering?: string }[]
+  >([]);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [imageName, setImageName] = useState<string>("");
+  const [viewModalVisible, setViewModalVisible] = useState(false);
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editNotes, setEditNotes] = useState("");
+  const [editWatering, setEditWatering] = useState("");
+  const [editImageUri, setEditImageUri] = useState<string | null>(null);
 
   useEffect(() => {
     const loadImages = async () => {
@@ -37,15 +47,22 @@ export default function HomeScreen() {
     loadImages();
   }, []);
 
-  const saveImagesToStorage = async (newImages: { uri: string; name: string }[]) => {
+  const saveImagesToStorage = async (
+    newImages: {
+      uri: string;
+      name: string;
+      notes?: string;
+      watering?: string;
+    }[]
+  ) => {
     try {
-      await AsyncStorage.setItem("images", JSON.stringify(newImages))
+      await AsyncStorage.setItem("images", JSON.stringify(newImages));
     } catch (error) {
       console.error("Failed to save images to AsyncStorage", error);
     }
   };
 
-  const openCamera = async () => {
+  const openCamera = async (forEdit: boolean = false) => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== "granted") {
       alert("Camera permission is required!");
@@ -59,13 +76,22 @@ export default function HomeScreen() {
 
     if (!result.canceled) {
       const imageUri = result.assets[0].uri;
-      setSelectedImage(imageUri);
+      if (forEdit) {
+        setEditImageUri(imageUri);
+      } else {
+        setSelectedImage(imageUri);
+      }
     }
   };
 
   const saveImage = () => {
     if (selectedImage && imageName.trim()) {
-      const newImage = { uri: selectedImage, name: imageName.trim() };
+      const newImage = {
+        uri: selectedImage,
+        name: imageName.trim(),
+        notes: "",
+        watering: "",
+      };
       const updatedImages = [...images, newImage];
       setImages(updatedImages);
       saveImagesToStorage(updatedImages);
@@ -78,6 +104,32 @@ export default function HomeScreen() {
     const updatedImages = images.filter((_, i) => i !== index);
     setImages(updatedImages);
     saveImagesToStorage(updatedImages);
+  };
+
+  const openViewModal = (index: number) => {
+    const bonsai = images[index];
+    setSelectedIndex(index);
+    setEditName(bonsai.name);
+    setEditNotes(bonsai.notes || "");
+    setEditWatering(bonsai.watering || "");
+    setEditImageUri(bonsai.uri);
+    setViewModalVisible(true);
+  };
+
+  const submitChanges = () => {
+    if (selectedIndex === null) return;
+    const updated = [...images];
+    updated[selectedIndex] = {
+      ...updated[selectedIndex],
+      name: editName.trim(),
+      notes: editNotes,
+      watering: editWatering,
+      uri: editImageUri || updated[selectedIndex].uri,
+    };
+    setImages(updated);
+    saveImagesToStorage(updated);
+    setViewModalVisible(false);
+    setSelectedIndex(null);
   };
 
   return (
@@ -96,7 +148,7 @@ export default function HomeScreen() {
         <ThemedText style={styles.librarySubtitle}>Your Library:</ThemedText>
         <Button
           mode="contained"
-          onPress={openCamera}
+          onPress={() => openCamera()}
           style={styles.cameraButton}
         >
           <MaterialIcons name="add" size={24} color="white" />
@@ -108,51 +160,160 @@ export default function HomeScreen() {
           <View key={index} style={styles.bonsaiCard}>
             <View style={styles.textContainer}>
               <ThemedText style={styles.bonsaiName}>{img.name}</ThemedText>
-              <TouchableOpacity onPress={() => deleteBonsai(index)}>
-                <MaterialIcons name="delete" size={32} color="#d74f5a" />
-              </TouchableOpacity>
+              <View style={{ flexDirection: "row", gap: 10 }}>
+                <TouchableOpacity onPress={() => deleteBonsai(index)}>
+                  <MaterialIcons name="delete" size={32} color="#d74f5a" />
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => openViewModal(index)}>
+                  <MaterialIcons name="visibility" size={32} color="#73906e" />
+                </TouchableOpacity>
+              </View>
             </View>
             <Image source={{ uri: img.uri }} style={styles.bonsaiImage} />
           </View>
         ))}
       </ScrollView>
 
-      <Modal visible={!!selectedImage} transparent animationType="fade">
+      <Modal visible={!!selectedImage} transparent animationType="slide">
         <TouchableWithoutFeedback onPress={() => setSelectedImage(null)}>
           <View style={styles.modalContainer}>
-            <TouchableWithoutFeedback
-              onPress={Keyboard.dismiss}
-              accessible={false}
-            >
-              <View style={styles.modalContent}>
-                {selectedImage && (
-                  <Image
-                    source={{ uri: selectedImage }}
-                    style={styles.fullImage}
-                  />
-                )}
-                <TextInput
-                  style={styles.textInput}
-                  placeholder="Enter name"
-                  value={imageName}
-                  onChangeText={setImageName}
-                />
-                <View style={styles.buttonRow}>
-                  <Button
-                    mode="contained"
-                    onPress={openCamera}
-                    style={styles.cameraButton}
+            <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+              <View style={styles.editModalContent}>
+                <View style={styles.modalHeader}>
+                  <ThemedText style={styles.modalTitle}>New Bonsai</ThemedText>
+                  <TouchableOpacity
+                    onPress={() => setSelectedImage(null)}
+                    style={styles.closeButton}
                   >
-                    <MaterialIcons name="photo-camera" size={24} color="white" />
-                  </Button>
-                  <Button
-                    mode="contained"
-                    onPress={saveImage}
-                    style={styles.saveButton}
-                  >
-                    <MaterialIcons name="check" size={24} color="white" />
-                  </Button>
+                    <MaterialIcons name="close" size={24} color="#666" />
+                  </TouchableOpacity>
                 </View>
+
+                <ScrollView
+                  contentContainerStyle={styles.scrollModalInner}
+                  showsVerticalScrollIndicator={false}
+                >
+                  {selectedImage && (
+                    <Image
+                      source={{ uri: selectedImage }}
+                      style={styles.editImage}
+                    />
+                  )}
+
+                  <View style={styles.inputContainer}>
+                    <ThemedText style={styles.inputLabel}>Name</ThemedText>
+                    <TextInput
+                      style={[styles.editInput, styles.nameInput]}
+                      placeholder="Enter bonsai name"
+                      value={imageName}
+                      onChangeText={setImageName}
+                      placeholderTextColor="#999"
+                    />
+                  </View>
+
+                  <View style={styles.editButtonRow}>
+                    <TouchableOpacity
+                      onPress={() => openCamera()}
+                      style={[styles.circleButton, styles.outlineButton]}
+                    >
+                      <MaterialIcons
+                        name="photo-camera"
+                        size={24}
+                        color="#73906e"
+                      />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={saveImage}
+                      style={[styles.circleButton, styles.filledButton]}
+                    >
+                      <MaterialIcons name="check" size={24} color="white" />
+                    </TouchableOpacity>
+                  </View>
+                </ScrollView>
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
+
+      <Modal visible={viewModalVisible} transparent animationType="slide">
+        <TouchableWithoutFeedback onPress={() => setViewModalVisible(false)}>
+          <View style={styles.modalContainer}>
+            <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+              <View style={styles.editModalContent}>
+                <View style={styles.modalHeader}>
+                  <ThemedText style={styles.modalTitle}>Edit Bonsai</ThemedText>
+                  <TouchableOpacity
+                    onPress={() => setViewModalVisible(false)}
+                    style={styles.closeButton}
+                  >
+                    <MaterialIcons name="close" size={24} color="#666" />
+                  </TouchableOpacity>
+                </View>
+
+                <ScrollView
+                  contentContainerStyle={styles.scrollModalInner}
+                  showsVerticalScrollIndicator={false}
+                >
+                  {editImageUri && (
+                    <Image
+                      source={{ uri: editImageUri }}
+                      style={styles.editImage}
+                    />
+                  )}
+
+                  <View style={styles.inputContainer}>
+                    <ThemedText style={styles.inputLabel}>Name</ThemedText>
+                    <TextInput
+                      style={[styles.editInput, styles.nameInput]}
+                      placeholder="Enter bonsai name"
+                      value={editName}
+                      onChangeText={setEditName}
+                      placeholderTextColor="#999"
+                    />
+
+                    <ThemedText style={styles.inputLabel}>
+                      Watering Schedule
+                    </ThemedText>
+                    <TextInput
+                      style={[styles.editInput, styles.wateringInput]}
+                      placeholder="e.g., Every 3 days, or when soil is dry"
+                      value={editWatering}
+                      onChangeText={setEditWatering}
+                      placeholderTextColor="#999"
+                    />
+
+                    <ThemedText style={styles.inputLabel}>Notes</ThemedText>
+                    <TextInput
+                      style={[styles.editInput, styles.notesInput]}
+                      placeholder="Add your care notes, observations, and reminders"
+                      value={editNotes}
+                      onChangeText={setEditNotes}
+                      multiline
+                      textAlignVertical="top"
+                      placeholderTextColor="#999"
+                    />
+                  </View>
+
+                  <View style={styles.editButtonRow}>
+                    <TouchableOpacity
+                      onPress={() => openCamera(true)}
+                      style={[styles.circleButton, styles.outlineButton]}
+                    >
+                      <MaterialIcons
+                        name="photo-camera"
+                        size={24}
+                        color="#73906e"
+                      />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={submitChanges}
+                      style={[styles.circleButton, styles.filledButton]}
+                    >
+                      <MaterialIcons name="check" size={24} color="white" />
+                    </TouchableOpacity>
+                  </View>
+                </ScrollView>
               </View>
             </TouchableWithoutFeedback>
           </View>
@@ -214,36 +375,106 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  modalContent: {
+  editModalContent: {
     backgroundColor: "white",
-    padding: 20,
-    borderRadius: 10,
-    alignItems: "center",
-    width: "80%",
+    borderRadius: 20,
+    width: width * 0.9,
+    maxHeight: "70%",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
-  fullImage: {
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "#eee",
+  },
+  modalTitle: {
+    lineHeight: 30,
+    fontSize: 24,
+    fontWeight: "600",
+    color: "#73906e",
+    fontFamily: "IndieFlower",
+  },
+  closeButton: {
+    padding: 5,
+  },
+  scrollModalInner: {
+    paddingBottom: 20,
+  },
+  editImage: {
     width: "100%",
     height: 200,
+    resizeMode: "cover",
+  },
+  inputContainer: {
+    padding: 20,
+  },
+  inputLabel: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#666",
+    marginBottom: 8,
+    marginTop: 16,
+  },
+  editInput: {
+    backgroundColor: "#f8f8f8",
     borderRadius: 10,
-    marginBottom: 20,
-  },
-  textInput: {
-    width: "100%",
-    height: 40,
-    borderColor: "#ccc",
+    padding: 12,
+    fontSize: 16,
     borderWidth: 1,
-    borderRadius: 5,
-    paddingHorizontal: 10,
-    marginBottom: 10,
+    borderColor: "#e0e0e0",
   },
-  saveButton: {
-    backgroundColor: "#73906e",
+  nameInput: {
+    height: 50,
   },
-  buttonRow: {
+  wateringInput: {
+    height: 50,
+  },
+  notesInput: {
+    height: 150,
+    paddingTop: 12,
+  },
+  editButtonRow: {
     flexDirection: "row",
-    justifyContent: "flex-end",
-    width: "100%",
-    gap: 10,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    gap: 20,
+  },
+  circleButton: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    justifyContent: "center",
+    alignItems: "center",
+    elevation: 2,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.22,
+    shadowRadius: 2.22,
+  },
+  outlineButton: {
+    backgroundColor: "white",
+    borderWidth: 2,
+    borderColor: "#73906e",
+  },
+  filledButton: {
+    backgroundColor: "#73906e",
   },
   bonsaiCard: {
     flexDirection: "row",
