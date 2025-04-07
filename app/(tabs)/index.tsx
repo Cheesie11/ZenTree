@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { checkIfRaining } from "./weather";
 import {
   Image,
   SafeAreaView,
@@ -45,6 +46,18 @@ export default function HomeScreen() {
     };
 
     loadImages();
+  }, []);
+  
+  useEffect(() => {
+    const testWeather = async () => {
+      const result = await checkIfRaining();
+      console.log("🌦️ Wetter-Test:");
+      console.log("Regnet es heute?", result.isRaining);
+      console.log("Beschreibung:", result.description);
+      console.log("Temperatur:", result.temp);
+    };
+  
+    testWeather();
   }, []);
 
   const saveImagesToStorage = async (
