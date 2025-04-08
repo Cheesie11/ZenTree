@@ -22,7 +22,12 @@ const { width } = Dimensions.get("window");
 
 export default function HomeScreen() {
   const [images, setImages] = useState<
-    { uri: string; name: string; notes?: string; watering?: string }[]
+    {
+      uri: string;
+      name: string;
+      notes?: string;
+      watering?: string;
+    }[]
   >([]);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [imageName, setImageName] = useState<string>("");
@@ -32,6 +37,7 @@ export default function HomeScreen() {
   const [editNotes, setEditNotes] = useState("");
   const [editWatering, setEditWatering] = useState("");
   const [editImageUri, setEditImageUri] = useState<string | null>(null);
+  const [isRaining, setIsRaining] = useState(false);
 
   useEffect(() => {
     const loadImages = async () => {
@@ -47,18 +53,34 @@ export default function HomeScreen() {
 
     loadImages();
   }, []);
-  
+
   useEffect(() => {
-    const testWeather = async () => {
+    const checkWeather = async () => {
       const result = await checkIfRaining();
-      console.log("🌦️ Wetter-Test:");
-      console.log("Regnet es heute?", result.isRaining);
-      console.log("Beschreibung:", result.description);
-      console.log("Temperatur:", result.temp);
+      setIsRaining(result.isRaining);
     };
-  
-    testWeather();
+
+    checkWeather();
+    const interval = setInterval(checkWeather, 3600000);
+    return () => clearInterval(interval);
   }, []);
+
+  const isWateringDay = (schedule: string) => {
+    if (!schedule) return false;
+
+    const days = parseInt(schedule);
+    if (isNaN(days)) return false;
+
+    const today = new Date();
+    const dayOfWeek = today.getDay();
+
+    return dayOfWeek % days === 0;
+  };
+
+  const getWateringStatus = (schedule: string) => {
+    if (!isWateringDay(schedule)) return null;
+    return isRaining ? "rain" : "water";
+  };
 
   const saveImagesToStorage = async (
     newImages: {
@@ -169,22 +191,50 @@ export default function HomeScreen() {
       </View>
 
       <ScrollView contentContainerStyle={{ padding: 10 }}>
-        {images.map((img, index) => (
-          <View key={index} style={styles.bonsaiCard}>
-            <View style={styles.textContainer}>
-              <ThemedText style={styles.bonsaiName}>{img.name}</ThemedText>
-              <View style={{ flexDirection: "row", gap: 10 }}>
-                <TouchableOpacity onPress={() => deleteBonsai(index)}>
-                  <MaterialIcons name="delete" size={32} color="#d74f5a" />
-                </TouchableOpacity>
-                <TouchableOpacity onPress={() => openViewModal(index)}>
-                  <MaterialIcons name="visibility" size={32} color="#73906e" />
-                </TouchableOpacity>
+        {images.map((img, index) => {
+          const wateringStatus = getWateringStatus(img.watering || "");
+
+          return (
+            <View key={index} style={styles.bonsaiCard}>
+              <View style={styles.textContainer}>
+                <View style={styles.nameContainer}>
+                  <ThemedText style={styles.bonsaiName}>{img.name}</ThemedText>
+                  {wateringStatus && (
+                    <View
+                      style={[
+                        styles.wateringIndicator,
+                        wateringStatus === "rain"
+                          ? styles.rainIndicator
+                          : styles.waterIndicator,
+                      ]}
+                    >
+                      <MaterialIcons
+                        name={
+                          wateringStatus === "rain" ? "water-drop" : "opacity"
+                        }
+                        size={16}
+                        color="white"
+                      />
+                    </View>
+                  )}
+                </View>
+                <View style={{ flexDirection: "row", gap: 10 }}>
+                  <TouchableOpacity onPress={() => deleteBonsai(index)}>
+                    <MaterialIcons name="delete" size={32} color="#d74f5a" />
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={() => openViewModal(index)}>
+                    <MaterialIcons
+                      name="visibility"
+                      size={32}
+                      color="#73906e"
+                    />
+                  </TouchableOpacity>
+                </View>
               </View>
+              <Image source={{ uri: img.uri }} style={styles.bonsaiImage} />
             </View>
-            <Image source={{ uri: img.uri }} style={styles.bonsaiImage} />
-          </View>
-        ))}
+          );
+        })}
       </ScrollView>
 
       <Modal visible={!!selectedImage} transparent animationType="slide">
@@ -516,5 +566,23 @@ const styles = StyleSheet.create({
     width: "50%",
     height: "100%",
     resizeMode: "cover",
+  },
+  nameContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  wateringIndicator: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  waterIndicator: {
+    backgroundColor: "#4CAF50",
+  },
+  rainIndicator: {
+    backgroundColor: "#FFC107",
   },
 });
