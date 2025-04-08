@@ -17,19 +17,12 @@ import * as ImagePicker from "expo-image-picker";
 import { Button } from "react-native-paper";
 import { ThemedText } from "@/components/ThemedText";
 import { MaterialIcons } from "@expo/vector-icons";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Bonsai } from "./Bonsai";
+import { loadBonsais, saveBonsais } from "./storage";
 const { width } = Dimensions.get("window");
 
 export default function HomeScreen() {
-  const [images, setImages] = useState<
-    {
-      uri: string;
-      name: string;
-      notes?: string;
-      watering?: string;
-      lastWatered?: string;
-    }[]
-  >([]);
+  const [images, setImages] = useState<Bonsai[]>([]);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [imageName, setImageName] = useState<string>("");
   const [viewModalVisible, setViewModalVisible] = useState(false);
@@ -42,14 +35,8 @@ export default function HomeScreen() {
 
   useEffect(() => {
     const loadImages = async () => {
-      try {
-        const savedImages = await AsyncStorage.getItem("images");
-        if (savedImages) {
-          setImages(JSON.parse(savedImages));
-        }
-      } catch (error) {
-        console.error("Failed to load images from AsyncStorage", error);
-      }
+      const savedImages = await loadBonsais();
+      setImages(savedImages);
     };
 
     loadImages();
@@ -119,20 +106,8 @@ export default function HomeScreen() {
     saveImagesToStorage(updated);
   };
 
-  const saveImagesToStorage = async (
-    newImages: {
-      uri: string;
-      name: string;
-      notes?: string;
-      watering?: string;
-      lastWatered?: string;
-    }[]
-  ) => {
-    try {
-      await AsyncStorage.setItem("images", JSON.stringify(newImages));
-    } catch (error) {
-      console.error("Failed to save images to AsyncStorage", error);
-    }
+  const saveImagesToStorage = async (newImages: Bonsai[]) => {
+    await saveBonsais(newImages);
   };
 
   const openCamera = async (forEdit: boolean = false) => {
