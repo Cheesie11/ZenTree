@@ -27,6 +27,7 @@ export default function HomeScreen() {
       name: string;
       notes?: string;
       watering?: string;
+      lastWatered?: string;
     }[]
   >([]);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
@@ -65,21 +66,57 @@ export default function HomeScreen() {
     return () => clearInterval(interval);
   }, []);
 
-  const isWateringDay = (schedule: string) => {
+  const isWateringDay = (schedule: string, lastWatered?: string) => {
     if (!schedule) return false;
 
     const days = parseInt(schedule);
     if (isNaN(days)) return false;
 
     const today = new Date();
-    const dayOfWeek = today.getDay();
+    const lastWateredDate = lastWatered ? new Date(lastWatered) : null;
 
-    return dayOfWeek % days === 0;
+    if (!lastWateredDate) {
+      return today.getDay() % days === 0;
+    }
+
+    const daysSinceWatering = Math.floor(
+      (today.getTime() - lastWateredDate.getTime()) / (1000 * 60 * 60 * 24)
+    );
+
+    return daysSinceWatering >= days;
   };
 
-  const getWateringStatus = (schedule: string) => {
-    if (!isWateringDay(schedule)) return null;
-    return isRaining ? "rain" : "water";
+  const getWateringStatus = (schedule: string, lastWatered?: string) => {
+    if (!schedule) return null;
+
+    const days = parseInt(schedule);
+    if (isNaN(days)) return null;
+
+    if (!lastWatered) {
+      return isWateringDay(schedule) ? (isRaining ? "rain" : "water") : null;
+    }
+
+    const lastWateredDate = new Date(lastWatered);
+    const today = new Date();
+    const daysSinceWatering = Math.floor(
+      (today.getTime() - lastWateredDate.getTime()) / (1000 * 60 * 60 * 24)
+    );
+
+    if (daysSinceWatering > days) {
+      return "overdue";
+    }
+
+    return isWateringDay(schedule) ? (isRaining ? "rain" : "water") : null;
+  };
+
+  const waterPlant = (index: number) => {
+    const updated = [...images];
+    updated[index] = {
+      ...updated[index],
+      lastWatered: new Date().toISOString(),
+    };
+    setImages(updated);
+    saveImagesToStorage(updated);
   };
 
   const saveImagesToStorage = async (
@@ -88,6 +125,7 @@ export default function HomeScreen() {
       name: string;
       notes?: string;
       watering?: string;
+      lastWatered?: string;
     }[]
   ) => {
     try {
@@ -126,6 +164,8 @@ export default function HomeScreen() {
         name: imageName.trim(),
         notes: "",
         watering: "",
+        lastWatered: new Date().toISOString(), 
+        // new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(), For Test Case
       };
       const updatedImages = [...images, newImage];
       setImages(updatedImages);
@@ -192,7 +232,10 @@ export default function HomeScreen() {
 
       <ScrollView contentContainerStyle={{ padding: 10 }}>
         {images.map((img, index) => {
-          const wateringStatus = getWateringStatus(img.watering || "");
+          const wateringStatus = getWateringStatus(
+            img.watering || "",
+            img.lastWatered
+          );
 
           return (
             <View key={index} style={styles.bonsaiCard}>
@@ -200,22 +243,26 @@ export default function HomeScreen() {
                 <View style={styles.nameContainer}>
                   <ThemedText style={styles.bonsaiName}>{img.name}</ThemedText>
                   {wateringStatus && (
-                    <View
-                      style={[
-                        styles.wateringIndicator,
-                        wateringStatus === "rain"
-                          ? styles.rainIndicator
-                          : styles.waterIndicator,
-                      ]}
-                    >
-                      <MaterialIcons
-                        name={
-                          wateringStatus === "rain" ? "water-drop" : "opacity"
-                        }
-                        size={16}
-                        color="white"
-                      />
-                    </View>
+                    <TouchableOpacity onPress={() => waterPlant(index)}>
+                      <View
+                        style={[
+                          styles.wateringIndicator,
+                          wateringStatus === "rain"
+                            ? styles.rainIndicator
+                            : wateringStatus === "overdue"
+                            ? styles.overdueIndicator
+                            : styles.waterIndicator,
+                        ]}
+                      >
+                        <MaterialIcons
+                          name={
+                            wateringStatus === "rain" ? "water-drop" : "opacity"
+                          }
+                          size={16}
+                          color="white"
+                        />
+                      </View>
+                    </TouchableOpacity>
                   )}
                 </View>
                 <View style={{ flexDirection: "row", gap: 10 }}>
@@ -340,9 +387,10 @@ export default function HomeScreen() {
                     </ThemedText>
                     <TextInput
                       style={[styles.editInput, styles.wateringInput]}
-                      placeholder="e.g., Every 3 days, or when soil is dry"
+                      placeholder="Enter number of days between watering"
                       value={editWatering}
                       onChangeText={setEditWatering}
+                      keyboardType="numeric"
                       placeholderTextColor="#999"
                     />
 
@@ -584,5 +632,8 @@ const styles = StyleSheet.create({
   },
   rainIndicator: {
     backgroundColor: "#FFC107",
+  },
+  overdueIndicator: {
+    backgroundColor: "#FF5252",
   },
 });
