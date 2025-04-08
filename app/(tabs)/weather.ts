@@ -10,7 +10,7 @@ type RainCheckResult = {
 
 export async function checkIfRaining(): Promise<RainCheckResult> {
   try {
-    // 1. Standort abfragen
+
     const { status } = await Location.requestForegroundPermissionsAsync();
     if (status !== "granted") {
       console.warn("Standortberechtigung abgelehnt");
@@ -20,13 +20,11 @@ export async function checkIfRaining(): Promise<RainCheckResult> {
     const location = await Location.getCurrentPositionAsync({});
     const { latitude, longitude } = location.coords;
 
-    // 2. Wetterdaten abrufen
     const response = await fetch(
       `https://api.openweathermap.org/data/2.5/weather?lat=${latitude}&lon=${longitude}&appid=${API_KEY}&units=metric`
     );
     const data = await response.json();
 
-    // 3. Wetter prüfen
     const weather = data.weather?.[0]?.main?.toLowerCase() || "";
     const description = data.weather?.[0]?.description || "";
     const temp = data.main?.temp;

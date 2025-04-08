@@ -434,8 +434,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 25,
   },
   welcomeImage: {
-    width: 400,
-    height: 300,
+    width: 350,
+    height: 250,
     resizeMode: "contain",
   },
   libraryContainer: {
